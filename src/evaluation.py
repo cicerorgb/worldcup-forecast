@@ -1,8 +1,9 @@
 """
-Avaliação dos modelos via Leave-One-Out Cross-Validation (LOO-CV).
+Leave-One-Out Cross-Validation (LOO-CV) harness.
 
-Com apenas 48 partidas, LOO-CV é preferível ao k-fold.
-Métricas: MAE, RMSE, acurácia de resultado (V1/E/V2), gol exato, placar exato.
+With only 48 matches, LOO-CV is preferred over k-fold to maximise the training
+set size at each fold. Metrics reported: MAE, RMSE, result accuracy (W/D/L),
+exact goal count accuracy, and exact score accuracy.
 """
 
 from __future__ import annotations
@@ -23,10 +24,10 @@ from src.features import (
 
 def _result(g1: int, g2: int) -> str:
     if g1 > g2:
-        return "V1"
+        return "W1"
     if g1 < g2:
-        return "V2"
-    return "E"
+        return "W2"
+    return "D"
 
 
 def loo_cv(
@@ -37,11 +38,11 @@ def loo_cv(
     ref_date: Optional[pd.Timestamp] = None,
 ) -> dict:
     """
-    Executa LOO-CV para um callable `model_builder()` que retorna
-    um estimador sklearn (com .fit e .predict).
+    Runs LOO-CV for a `model_builder()` callable that returns an sklearn-compatible
+    estimator (with .fit and .predict methods).
 
-    historical: DataFrame de histórico pré-Copa (opcional).
-    ref_date: data de referência para o decay (default: 2026-06-24).
+    historical: pre-tournament match history DataFrame (optional).
+    ref_date: reference date for time-decay (defaults to 2026-06-24).
     """
     true_g1, true_g2, pred_g1, pred_g2 = [], [], [], []
 
@@ -55,7 +56,6 @@ def loo_cv(
         model = model_builder()
         model.fit(X_train, y_train)
 
-        # Features para a partida excluída
         row = played.loc[idx]
         ts = compute_team_stats(
             played,
@@ -63,15 +63,15 @@ def loo_cv(
             historical=historical,
             ref_date=ref_date,
         )
-        f1 = _row_features(row["time1"], row["time2"], ts, rankings)
-        f2 = _row_features(row["time2"], row["time1"], ts, rankings)
+        f1 = _row_features(row["team1"], row["team2"], ts, rankings)
+        f2 = _row_features(row["team2"], row["team1"], ts, rankings)
         X_pred = pd.DataFrame([f1, f2], columns=FEATURE_COLS)
 
         preds = np.clip(model.predict(X_pred), 0, None)
         pred_g1.append(preds[0])
         pred_g2.append(preds[1])
-        true_g1.append(row["gols1"])
-        true_g2.append(row["gols2"])
+        true_g1.append(row["goals1"])
+        true_g2.append(row["goals2"])
 
     true_all = np.array(true_g1 + true_g2, dtype=float)
     pred_all = np.array(pred_g1 + pred_g2, dtype=float)

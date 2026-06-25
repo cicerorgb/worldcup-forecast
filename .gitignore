@@ -10,9 +10,9 @@ build/
 venv/
 env/
 
-# Outputs gerados
-outputs/graficos/
-outputs/predicoes.csv
+# Generated outputs
+outputs/charts/
+outputs/predictions.csv
 
 # IDEs
 .vscode/

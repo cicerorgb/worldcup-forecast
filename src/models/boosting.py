@@ -1,13 +1,15 @@
 """
-Modelos de Gradient Boosting para previsão de gols.
+Gradient Boosting models for goal-count prediction.
 
-XGBoost e LightGBM com objetivo Poisson (log-link nativo), que é teoricamente
-correto para contagem de gols. Hiperparâmetros conservadores para evitar
-overfitting com o dataset pequeno (96 amostras = 48 jogos × 2 perspectivas).
+XGBoost and LightGBM with a Poisson objective (native log-link), which is
+theoretically correct for count data. Hyper-parameters are conservative to
+avoid overfitting on the small dataset (96 samples = 48 matches × 2 team
+perspectives).
 """
 
 from __future__ import annotations
 
+import numpy as np
 import lightgbm as lgb
 import xgboost as xgb
 from sklearn.base import BaseEstimator, RegressorMixin
@@ -15,8 +17,8 @@ from sklearn.base import BaseEstimator, RegressorMixin
 
 def build_xgb(random_state: int = 42) -> xgb.XGBRegressor:
     """
-    XGBoost com objetivo Poisson.
-    Regularização forte (max_depth=3, reg_lambda=2) para dataset pequeno.
+    XGBoost with Poisson objective.
+    Strong regularization (max_depth=3, reg_lambda=2) suited for small datasets.
     """
     return xgb.XGBRegressor(
         n_estimators=300,
@@ -35,8 +37,8 @@ def build_xgb(random_state: int = 42) -> xgb.XGBRegressor:
 
 def build_lgb(random_state: int = 42) -> lgb.LGBMRegressor:
     """
-    LightGBM com objetivo Poisson.
-    num_leaves=8 e min_child_samples=6 evitam overfitting agressivo.
+    LightGBM with Poisson objective.
+    num_leaves=8 and min_child_samples=6 prevent aggressive overfitting.
     """
     return lgb.LGBMRegressor(
         n_estimators=300,
@@ -55,22 +57,21 @@ def build_lgb(random_state: int = 42) -> lgb.LGBMRegressor:
 
 class WeightedEnsemble(BaseEstimator, RegressorMixin):
     """
-    Combina N modelos com pesos calculados a partir do MAE de LOO-CV.
-    Peso do modelo i = (1/MAE_i) / soma(1/MAE_j)
+    Combines N estimators using inverse-MAE weights from LOO-CV.
+
+    Weight of model i = (1 / MAE_i) / sum(1 / MAE_j)
     """
 
     def __init__(self, models: list, weights: list[float]):
         self.models = models
-        import numpy as np
         w = np.array(weights, dtype=float)
         self.weights = w / w.sum()
 
     def fit(self, X, y):
-        for m in self.models:
-            m.fit(X, y)
+        for model in self.models:
+            model.fit(X, y)
         return self
 
-    def predict(self, X):
-        import numpy as np
-        preds = np.column_stack([m.predict(X) for m in self.models])
+    def predict(self, X) -> np.ndarray:
+        preds = np.column_stack([model.predict(X) for model in self.models])
         return preds @ self.weights
