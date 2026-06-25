@@ -18,9 +18,34 @@ Each match generates **two training rows** (one per attacking perspective), keep
 | `atk_vs_def` | Attack rate minus opponent defence rate |
 | `quality_ratio` | Ratio of FIFA ranking points |
 
-**Attack/Defence rates** are computed as a weighted blend:
-- **Pre-tournament history (2020–2026):** exponential time-decay (`weight = exp(−λ × days)`) multiplied by tournament relevance weight (World Cup × 3, Qualifiers × 2, Confederation × 1.5, Friendly × 0.5)
-- **In-tournament group stage:** fixed weight equivalent to a World Cup match
+**Attack/Defence rates** are computed as a weighted blend of two signals:
+
+| Signal | Weight |
+|---|---|
+| Pre-tournament history (2020–2026) | 6-month bucket weight × tournament relevance weight |
+| In-tournament group stage | Fixed weight = 3.0 (World Cup level) |
+
+**6-month stepped decay** — inspired by the FIFA ranking methodology used before continuous Elo was adopted (Hvattum & Arntzen, 2010). Each historical result is assigned a bucket weight based on how long ago it occurred:
+
+| Window | Bucket weight |
+|---|---|
+| 0–6 months | 1.00 (full weight) |
+| 6–12 months | 0.70 |
+| 12–18 months | 0.50 |
+| 18–24 months | 0.35 |
+| 24–30 months | 0.25 |
+| 30+ months | 0.15 |
+
+Calibrated to approximate an exponential curve with a ~12-month half-life (ξ ≈ 0.0019/day, standard Dixon-Coles practitioner range). Each bucket weight is then multiplied by the tournament relevance weight (World Cup × 3, Qualifiers × 2, Confederation × 1.5, Friendly × 0.5).
+
+**Asymmetric loss penalty** — when a team *lost* a historical match, the goals conceded in that game receive an extra recency multiplier before being averaged into the defence rate. This reflects the intuition that a recent heavy defeat is a stronger signal of current defensive weakness than an old one:
+
+| Window | Extra multiplier on goals conceded (losses only) |
+|---|---|
+| 0–6 months | × 1.50 |
+| 6–12 months | × 1.25 |
+| 12–18 months | × 1.10 |
+| 18+ months | × 1.00 (no extra penalty) |
 
 When no history is available, Bayesian smoothing towards a league-average prior is used as a fallback.
 
@@ -110,4 +135,5 @@ The pipeline prints a progress log and a formatted prediction table to stdout, t
 ## References
 
 - Dixon, M. J., & Coles, S. G. (1997). Modelling association football scores and inefficiencies in the football betting market. *Journal of the Royal Statistical Society: Series C (Applied Statistics)*, 46(2), 265-280.
+- Hvattum, L. M., & Arntzen, H. (2010). Using ELO ratings for match result prediction in association football. *International Journal of Forecasting*, 26(3), 460-470.
 - FIFA World Rankings methodology: https://www.fifa.com/fifa-world-ranking/procedure-men

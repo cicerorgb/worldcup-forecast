@@ -51,10 +51,10 @@ DATA;GRUPO;JOGO;;;;
 24/06;B;B�snia-Herzegovina;3;x;1;Qatar
 24/06;C;Esc�cia;0;x;3;Brasil
 24/06;C;Marrocos;4;x;2;Haiti
-24/06;A;Rep�blica Tcheca;;x;;M�xico
-24/06;A;�frica do Sul;;x;;Coreia do Sul
-25/06;E;Cura�ao;;x;;Costa do Marfim
-25/06;E;Equador;;x;;Alemanha
+24/06;A;Rep�blica Tcheca;0;x;3;M�xico
+24/06;A;�frica do Sul;1;x;0;Coreia do Sul
+25/06;E;Cura�ao;0;x;2;Costa do Marfim
+25/06;E;Equador;2;x;1;Alemanha
 25/06;F;Jap�o;;x;;Su�cia
 25/06;F;Tun�sia;;x;;Holanda
 25/06;D;Turquia;;x;;Estados Unidos
@@ -71,3 +71,6 @@ DATA;GRUPO;JOGO;;;;
 27/06;K;Congo (RD);;x;;Uzbequist�o
 27/06;J;Arg�lia;;x;;�ustria
 27/06;J;Jord�nia;;x;;Argentina
+28/06;A;�frica do Sul;;x;;Canad�
+
+

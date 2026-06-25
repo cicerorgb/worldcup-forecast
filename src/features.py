@@ -1,14 +1,30 @@
 """
 Feature engineering for match score prediction.
 
-Strategy:
-  - Each match produces 2 training rows (one per attacking perspective).
-  - When historical data is available, attack/defence rates are computed as a
-    weighted blend of two signals:
-      (a) Pre-tournament history (2020–2026): exponential time-decay weighted
-          by tournament relevance (World Cup > Qualifiers > Confederation > Friendly)
-      (b) In-tournament group stage matches: fixed weight equivalent to a World Cup game
-  - Without historical data, Bayesian smoothing with a league-average prior is used.
+Temporal weighting strategy (inspired by FIFA ranking pre-2018 methodology):
+  Results are grouped into 6-month windows. Each window carries a progressively
+  lower weight, giving recent form much more influence than distant results.
+  This is analogous to the stepped multipliers used in football ranking systems
+  before continuous Elo was adopted (Hvattum & Arntzen, 2010).
+
+  Within each bucket the decay is already captured by the bucket weight itself;
+  no additional intra-bucket smoothing is applied, keeping the scheme interpretable.
+
+Asymmetric loss penalty:
+  When a team *lost* a historical match, the goals conceded in that game receive
+  an extra recency multiplier before being averaged into the defence rate.
+  This reflects a well-known football-forecasting heuristic: a recent heavy defeat
+  is a stronger signal of current defensive fragility than an old one, because
+  squads change, tactics evolve, and morale fluctuates. Older losses carry
+  progressively less extra weight until they are treated symmetrically with draws
+  and wins (multiplier = 1.0 beyond 18 months).
+
+Blend:
+  When historical data is available, attack/defence rates are a weighted blend of:
+    (a) Pre-tournament history (2020–2026): 6-month bucket weight × tournament weight
+        with asymmetric loss penalty on defence rate
+    (b) In-tournament group-stage matches: fixed weight = _COPA_W (World Cup level)
+  Without historical data, Bayesian smoothing towards a league-average prior is used.
 """
 
 from __future__ import annotations
@@ -31,11 +47,58 @@ FEATURE_COLS = [
     "quality_ratio",  # rank_off / rank_def
 ]
 
-_AVG_GOALS   = 1.48   # global baseline goals per team per match
-_PRIOR_K     = 2      # pseudo-matches used in Bayesian prior (no-history fallback)
-_DECAY_RATE  = 0.003  # λ for time-decay: weight = exp(-λ × days_ago)
-_COPA_W      = 3.0    # tournament weight assigned to current World Cup matches
-_REF_DATE    = pd.Timestamp("2026-06-24")  # reference date for decay computation
+_AVG_GOALS = 1.48   # global baseline goals per team per match
+_PRIOR_K   = 2      # pseudo-matches used in Bayesian prior (no-history fallback)
+_COPA_W    = 3.0    # tournament weight for current World Cup matches
+_REF_DATE  = pd.Timestamp("2026-06-24")  # reference date for bucket computation
+
+# 6-month stepped weights.
+# Each tuple: (lower_bound_months, upper_bound_months, weight_multiplier)
+# Calibrated so the midpoint of each bucket matches an exponential curve
+# with a ~12-month half-life (ξ ≈ 0.0019/day, see Dixon-Coles practitioners).
+_TEMPORAL_BUCKETS: list[tuple[float, float, float]] = [
+    (0,   6,   1.00),   # 0–6 months:   full weight
+    (6,   12,  0.70),   # 6–12 months:  70 %
+    (12,  18,  0.50),   # 12–18 months: 50 %
+    (18,  24,  0.35),   # 18–24 months: 35 %
+    (24,  30,  0.25),   # 24–30 months: 25 %
+    (30,  float("inf"), 0.15),  # 30+ months:   15 %
+]
+
+# Extra multiplier applied to goals_against when the team LOST that match.
+# Only applied within the recency window where losses carry the strongest signal.
+# Each tuple: (lower_bound_months, upper_bound_months, defence_penalty)
+_LOSS_RECENCY_MULTIPLIERS: list[tuple[float, float, float]] = [
+    (0,   6,   1.50),   # 0–6 months:   losses count 50 % extra on defence rate
+    (6,   12,  1.25),   # 6–12 months:  25 % extra
+    (12,  18,  1.10),   # 12–18 months: 10 % extra
+    (18,  float("inf"), 1.00),  # older losses: no additional penalty
+]
+
+
+def _months_ago(days: int) -> float:
+    return days / 30.4375  # average days per month (365.25 / 12)
+
+
+def _temporal_weight(months: float) -> float:
+    """Returns the 6-month bucket weight for a match that occurred `months` ago."""
+    for lo, hi, w in _TEMPORAL_BUCKETS:
+        if lo <= months < hi:
+            return w
+    return _TEMPORAL_BUCKETS[-1][2]
+
+
+def _loss_defence_multiplier(months: float, is_loss: bool) -> float:
+    """
+    Returns the extra multiplier applied to goals_against for a lost match.
+    For non-losses (wins or draws) always returns 1.0.
+    """
+    if not is_loss:
+        return 1.0
+    for lo, hi, m in _LOSS_RECENCY_MULTIPLIERS:
+        if lo <= months < hi:
+            return m
+    return 1.0
 
 
 def _smoothed_rate(raw: float, games: int, prior: float = _AVG_GOALS, k: int = _PRIOR_K) -> float:
@@ -52,16 +115,19 @@ def compute_team_stats(
     exclude_idx: Optional[int] = None,
     historical: Optional[pd.DataFrame] = None,
     ref_date: Optional[pd.Timestamp] = None,
-    decay_rate: float = _DECAY_RATE,
 ) -> dict:
     """
     Computes attack and defence rates for each team.
 
     Without history: Bayesian smoothing over group-stage matches only.
-    With history: weighted blend of (time-decayed historical data) + (group-stage data).
+    With history: weighted blend of (6-month-bucketed historical data) +
+                  (group-stage data at World Cup weight).
+
+    The defence rate applies an asymmetric recency penalty to goals conceded
+    in losses: recent defeats inflate the defence rate more than old ones.
 
     exclude_idx: omits this match index from both stats and training (clean LOO-CV).
-    ref_date: reference date for time-decay (defaults to _REF_DATE).
+    ref_date: reference date for bucket assignment (defaults to _REF_DATE).
     """
     if ref_date is None:
         ref_date = _REF_DATE
@@ -74,9 +140,16 @@ def compute_team_stats(
             days_ago = (ref_date - row["date"]).days
             if days_ago < 0:
                 continue
-            w = np.exp(-decay_rate * days_ago) * float(row["tournament_weight"])
-            hist_w[row["team"]]["wgf"]  += row["goals_for"]     * w
-            hist_w[row["team"]]["wgc"]  += row["goals_against"]  * w
+
+            months = _months_ago(days_ago)
+            bucket_w = _temporal_weight(months)
+            w = bucket_w * float(row["tournament_weight"])
+
+            is_loss = row["goals_for"] < row["goals_against"]
+            loss_mult = _loss_defence_multiplier(months, is_loss)
+
+            hist_w[row["team"]]["wgf"]  += row["goals_for"]    * w
+            hist_w[row["team"]]["wgc"]  += row["goals_against"] * w * loss_mult
             hist_w[row["team"]]["wtot"] += w
 
     # ── Part 2: current group-stage matches ──────────────────────────────────
@@ -124,7 +197,6 @@ def compute_team_stats(
             attack_rate  = (h_attack  * hs["wtot"] + c_attack  * c_weight) / total_w
             defence_rate = (h_defence * hs["wtot"] + c_defence * c_weight) / total_w
         else:
-            # Fallback: plain Bayesian smoothing
             raw_atk = cs["gf"] / gp if gp else _AVG_GOALS
             raw_def = cs["gc"] / gp if gp else _AVG_GOALS
             attack_rate  = _smoothed_rate(raw_atk, gp)
