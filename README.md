@@ -43,7 +43,7 @@ Metrics reported: MAE, RMSE, W/D/L result accuracy, exact goal count accuracy, e
 
 The model outputs **Dixon-Coles corrected score probability matrices**:
 
-- For each match, independent Poisson PMFs with estimated λ₁ and λ₂ are combined into a joint probability matrix P[i, j] = P(team1 scores i, team2 scores j)
+- For each match, independent Poisson PMFs with estimated $λ_1$ and $λ_2$ are combined into a joint probability matrix P[i, j] = P(team1 scores i, team2 scores j)
 - A Dixon-Coles correction factor ρ is applied to low-scoring outcomes (0-0, 1-0, 0-1, 1-1), where the independence assumption is slightly violated
 - ρ is estimated via maximum likelihood on the training data
 
