@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# Outputs gerados
+outputs/graficos/
+outputs/predicoes.csv
+
+# IDEs
+.vscode/
+.idea/
+
+# Claude Code
+.claude/

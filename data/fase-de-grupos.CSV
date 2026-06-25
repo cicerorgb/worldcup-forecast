@@ -1,0 +1,73 @@
+DATA;GRUPO;JOGO;;;;
+11/06;A;M�xico;2;x;0;�frica do Sul
+11/06;A;Coreia do Sul;2;x;1;Rep�blica Tcheca
+12/06;B;Canad�;1;x;1;B�snia-Herzegovina
+12/06;D;Estados Unidos;4;x;1;Paraguai
+13/06;B;Qatar;1;x;1;Su��a
+13/06;C;Brasil;1;x;1;Marrocos
+13/06;C;Haiti;0;x;1;Esc�cia
+14/06;D;Austr�lia;2;x;0;Turquia
+14/06;E;Alemanha;7;x;1;Cura�ao
+14/06;F;Holanda;2;x;2;Jap�o
+14/06;E;Costa do Marfim;1;x;0;Equador
+14/06;F;Su�cia;5;x;1;Tun�sia
+15/06;H;Espanha;0;x;0;Cabo Verde
+15/06;G;B�lgica;1;x;1;Egito
+15/06;H;Ar�bia Saudita;1;x;1;Uruguai
+15/06;G;Ir�;2;x;2;Nova Zel�ndia
+16/06;I;Fran�a;3;x;1;Senegal
+16/06;I;Iraque;1;x;4;Noruega
+16/06;J;Argentina;3;x;0;Arg�lia
+17/06;J;�ustria;3;x;1;Jord�nia
+17/06;K;Portugal;1;x;1;Congo (RD)
+17/06;L;Inglaterra;4;x;2;Cro�cia
+17/06;L;Gana;1;x;0;Panam�
+17/06;K;Uzbequist�o;1;x;3;Col�mbia
+18/06;A;Rep�blica Tcheca;1;x;1;�frica do Sul
+18/06;B;Su��a;4;x;1;B�snia-Herzegovina
+18/06;B;Canad�;6;x;0;Qatar
+18/06;A;M�xico;2;x;0;Coreia do Sul
+19/06;D;Estados Unidos;2;x;0;Austr�lia
+19/06;C;Esc�cia;0;x;1;Marrocos
+19/06;C;Brasil;3;x;0;Haiti
+20/06;D;Turquia;0;x;1;Paraguai
+20/06;F;Holanda;5;x;1;Su�cia
+20/06;E;Equador;0;x;0;Cura�ao
+20/06;E;Alemanha;2;x;1;Costa do Marfim
+21/06;F;Tun�sia;0;x;4;Jap�o
+21/06;H;Espanha;4;x;0;Ar�bia Saudita
+21/06;G;B�lgica;0;x;0;Ir�
+21/06;H;Uruguai;2;x;2;Cabo Verde
+21/06;G;Nova Zel�ndia;1;x;3;Egito
+22/06;J;Argentina;2;x;0;�ustria
+22/06;I;Fran�a;3;x;0;Iraque
+22/06;I;Noruega;3;x;2;Senegal
+23/06;J;Jord�nia;1;x;2;Arg�lia
+23/06;K;Portugal;5;x;0;Uzbequist�o
+23/06;L;Inglaterra;0;x;0;Gana
+23/06;L;Panam�;0;x;1;Cro�cia
+23/06;K;Col�mbia;1;x;0;Congo (RD)
+24/06;B;Su��a;2;x;1;Canad�
+24/06;B;B�snia-Herzegovina;3;x;1;Qatar
+24/06;C;Esc�cia;0;x;3;Brasil
+24/06;C;Marrocos;4;x;2;Haiti
+24/06;A;Rep�blica Tcheca;;x;;M�xico
+24/06;A;�frica do Sul;;x;;Coreia do Sul
+25/06;E;Cura�ao;;x;;Costa do Marfim
+25/06;E;Equador;;x;;Alemanha
+25/06;F;Jap�o;;x;;Su�cia
+25/06;F;Tun�sia;;x;;Holanda
+25/06;D;Turquia;;x;;Estados Unidos
+25/06;D;Paraguai;;x;;Austr�lia
+26/06;I;Noruega;;x;;Fran�a
+26/06;I;Senegal;;x;;Iraque
+26/06;H;Cabo Verde;;x;;Ar�bia Saudita
+26/06;H;Uruguai;;x;;Espanha
+27/06;G;Egito;;x;;Ir�
+27/06;G;Nova Zel�ndia;;x;;B�lgica
+27/06;L;Panam�;;x;;Inglaterra
+27/06;L;Cro�cia;;x;;Gana
+27/06;K;Col�mbia;;x;;Portugal
+27/06;K;Congo (RD);;x;;Uzbequist�o
+27/06;J;Arg�lia;;x;;�ustria
+27/06;J;Jord�nia;;x;;Argentina
